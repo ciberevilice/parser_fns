@@ -1,0 +1,28 @@
+import javax.net.ssl.*;
+
+public class Utils {
+    public static SSLSocketFactory getSslSocketFactory(String certPath, String keyPath) throws Exception {
+        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        KeyStore keyStore = KeyStore.getInstance("PKCS12");
+
+        char[] password = "your_password".toCharArray(); // Replace with your actual password
+
+        keyStore.load(Utils.class.getResourceAsStream(certPath), password);
+        keyManagerFactory.init(keyStore, password);
+
+        TrustManager[] trustManagers = { new X509TrustManager() {
+            public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                return null;
+            }
+            public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {
+            }
+            public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {
+            }
+        } };
+
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(keyManagerFactory.getKeyManagers(), trustManagers, new java.security.SecureRandom());
+
+        return sslContext.getSocketFactory();
+    }
+}
