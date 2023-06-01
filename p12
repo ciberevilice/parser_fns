@@ -56,3 +56,51 @@ public class JSoupWithP12AuthExample {
         }
     }
 }
+
+import org.jsoup.Jsoup;
+import org.jsoup.Connection;
+import java.io.File;
+import java.io.IOException;
+import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
+
+public class JsoupP12AuthExample {
+    public static void main(String[] args) {
+        try {
+            // Путь к файлу .p12
+            String p12FilePath = "path/to/your_key.p12";
+            // Пароль для файла .p12
+            String p12FilePassword = "your_p12_password";
+
+            // Загрузка ключа из файла .p12
+            KeyStore keyStore = KeyStore.getInstance("PKCS12");
+            keyStore.load(new File(p12FilePath), p12FilePassword.toCharArray());
+
+            // Получение приватного ключа
+            PrivateKey privateKey = (PrivateKey) keyStore.getKey(keyStore.aliases().nextElement(), p12FilePassword.toCharArray());
+
+            // Получение сертификата
+            X509Certificate certificate = (X509Certificate) keyStore.getCertificate(keyStore.aliases().nextElement());
+
+            // URL сайта, к которому вы хотите подключиться
+            String url = "https://example.com";
+
+            // Установка SSL контекста с использованием ключа и сертификата
+            Connection connection = Jsoup.connect(url).sslSocketFactory(privateKey, certificate);
+
+            // Выполнение запроса
+            Connection.Response response = connection.execute();
+
+            // Получение содержимого страницы
+            String html = response.body();
+
+            // Обработка полученных данных
+            System.out.println(html);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
