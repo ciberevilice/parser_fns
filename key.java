@@ -26,3 +26,25 @@ public class Utils {
         return sslContext.getSocketFactory();
     }
 }
+
+import java.io.FileInputStream;
+import java.security.KeyStore;
+import javax.net.ssl.*;
+
+public class Utils {
+    public static SSLSocketFactory getSslSocketFactory(String keystorePath, String keystorePassword) throws Exception {
+        KeyStore keyStore = KeyStore.getInstance("JKS");
+        keyStore.load(new FileInputStream(keystorePath), keystorePassword.toCharArray());
+
+        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        keyManagerFactory.init(keyStore, keystorePassword.toCharArray());
+
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        trustManagerFactory.init(keyStore);
+
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
+
+        return sslContext.getSocketFactory();
+    }
+}
