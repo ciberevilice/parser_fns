@@ -1,0 +1,58 @@
+import org.jsoup.Connection;
+import org.jsoup.Jsoup;
+import java.security.KeyStore;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
+public class JSoupWithP12AuthExample {
+    public static void main(String[] args) {
+        try {
+            // Путь к файлу .p12 ключа и его пароль
+            String p12FilePath = "путь_к_файлу.p12";
+            String p12Password = "пароль_ключа";
+
+            // Загрузка ключа из файла .p12
+            KeyStore keyStore = KeyStore.getInstance("PKCS12");
+            keyStore.load(new FileInputStream(p12FilePath), p12Password.toCharArray());
+
+            // Создание менеджера ключей
+            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            keyManagerFactory.init(keyStore, p12Password.toCharArray());
+
+            // Создание SSL контекста с использованием ключей из .p12
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(keyManagerFactory.getKeyManagers(), null, null);
+
+            // Создание доверительного менеджера, чтобы принимать все сертификаты
+            TrustManager[] trustManagers = new TrustManager[] {
+                new X509TrustManager() {
+                    public X509Certificate[] getAcceptedIssuers() {
+                        return new X509Certificate[0];
+                    }
+
+                    public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+                    }
+
+                    public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+                    }
+                }
+            };
+
+            // Настройка подключения с использованием JSoup
+            Connection connection = Jsoup.connect("https://example.com")
+                .sslSocketFactory(sslContext.getSocketFactory())
+                .trustManager(trustManagers[0]);
+
+            // Отправка запроса и получение ответа
+            Connection.Response response = connection.execute();
+            String responseBody = response.body();
+            System.out.println(responseBody);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
