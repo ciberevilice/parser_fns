@@ -1,0 +1,55 @@
+import java.io.FileInputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
+import javax.net.ssl.*;
+
+public class Utils {
+    public static void authorizeWithPrivateKey(String url, String privateKeyPath, String privateKeyPassword) throws Exception {
+        // Загрузка приватного ключа
+        PrivateKey privateKey = loadPrivateKey(privateKeyPath, privateKeyPassword);
+
+        // Загрузка сертификата
+        X509Certificate certificate = loadCertificate(privateKeyPath, privateKeyPassword);
+
+        // Создание и настройка SSL-сокета
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        KeyStore keyStore = KeyStore.getInstance("PKCS12");
+        keyStore.load(null, null);
+        keyStore.setKeyEntry("privateKey", privateKey, privateKeyPassword.toCharArray(), new X509Certificate[]{certificate});
+        keyManagerFactory.init(keyStore, privateKeyPassword.toCharArray());
+        sslContext.init(keyManagerFactory.getKeyManagers(), null, null);
+
+        // Отправка запроса с авторизацией
+        URL requestUrl = new URL(url);
+        HttpsURLConnection connection = (HttpsURLConnection) requestUrl.openConnection();
+        connection.setSSLSocketFactory(sslContext.getSocketFactory());
+        connection.setRequestMethod("GET");
+
+        // Вывод ответа сервера
+        int responseCode = connection.getResponseCode();
+        System.out.println("Response Code: " + responseCode);
+        // Дополнительный код для обработки ответа сервера
+    }
+
+    private static PrivateKey loadPrivateKey(String privateKeyPath, String privateKeyPassword) throws Exception {
+        KeyStore keyStore = KeyStore.getInstance("PKCS12");
+        FileInputStream inputStream = new FileInputStream(privateKeyPath);
+        keyStore.load(inputStream, privateKeyPassword.toCharArray());
+        PrivateKey privateKey = (PrivateKey) keyStore.getKey(keyStore.aliases().nextElement(), privateKeyPassword.toCharArray());
+        inputStream.close();
+        return privateKey;
+    }
+
+    private static X509Certificate loadCertificate(String privateKeyPath, String privateKeyPassword) throws Exception {
+        KeyStore keyStore = KeyStore.getInstance("PKCS12");
+        FileInputStream inputStream = new FileInputStream(privateKeyPath);
+        keyStore.load(inputStream, privateKeyPassword.toCharArray());
+        X509Certificate certificate = (X509Certificate) keyStore.getCertificate(keyStore.aliases().nextElement());
+        inputStream.close();
+        return certificate;
+    }
+}
